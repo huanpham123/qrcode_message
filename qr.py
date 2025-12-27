@@ -8,19 +8,20 @@ import qrcode
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
-app = Flask(__name__, template_folder='../templates')
+# SỬA LẠI ĐÂY: Vì qr.py nằm cùng cấp với thư mục templates/
+app = Flask(__name__, template_folder='templates')
 
 # MongoDB connection
 MONGODB_URI = "mongodb+srv://qrmessage:qrmessage123@cluster0.kyyfm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-# Sử dụng biến global để cache kết nối (tăng hiệu năng trên Serverless)
 db_client = None
 
 def get_db():
     global db_client
     if db_client is None:
         try:
-            db_client = MongoClient(MONGODB_URI, server_api=ServerApi('1'))
+            # Tăng timeout để tránh treo serverless function
+            db_client = MongoClient(MONGODB_URI, server_api=ServerApi('1'), serverSelectionTimeoutMS=5000)
         except Exception as e:
             print(f"MongoDB connection error: {e}")
             return None
@@ -28,6 +29,7 @@ def get_db():
 
 @app.route('/')
 def home():
+    # render_template sẽ tự tìm trong thư mục /templates/qr.html
     return render_template('qr.html')
 
 @app.route('/api/create', methods=['POST'])
@@ -40,13 +42,11 @@ def create_message():
         
         msg_id = str(uuid.uuid4())[:8]
         
-        # Xử lý URL động trên Vercel
         host = request.headers.get('Host')
-        protocol = 'https' if not host.startswith('localhost') else 'http'
+        protocol = 'https' if host and not host.startswith('localhost') else 'http'
         base_url = f"{protocol}://{host}"
         view_url = f"{base_url}/view/{msg_id}"
         
-        # Tạo QR code
         qr = qrcode.QRCode(version=1, box_size=10, border=4)
         qr.add_data(view_url)
         qr.make(fit=True)
@@ -85,7 +85,6 @@ def view_message(msg_id):
         if not message_doc:
             return "<h1>Message Not Found</h1><a href='/'>Go Home</a>", 404
         
-        # Format thời gian đơn giản
         dt = datetime.fromisoformat(message_doc['created_at'])
         created_time = dt.strftime('%Y-%m-%d %H:%M:%S')
         
@@ -145,5 +144,6 @@ def render_template_string_view(content, time):
     </html>
     """
 
-# Cần thiết cho Vercel
+# QUAN TRỌNG: Gán app để Vercel nhận diện đúng WSGI interface
 app.debug = False
+app = app
