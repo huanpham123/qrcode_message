@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Message System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-delete {
+            background: #e53e3e;
+        }
+        
+        .btn-delete:hover {
+            background: #c53030;
+        }
+        
+        .btn-view {
+            background: #38a169;
+        }
+        
+        .btn-view:hover {
+            background: #2f855a;
+        }
+        
+        .qr-result {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .qr-image {
+            max-width: 200px;
+            height: auto;
+            margin: 15px auto;
+        }
+        
+        .url-box {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .url-box input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .messages-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .message-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+        
+        .message-content {
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .message-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .success {
+            background: #38a169;
+        }
+        
+        .error {
+            background: #e53e3e;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .message-meta {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .message-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📨 QR Message System</h1>
+            <p>Create messages and share via QR code</p>
+        </div>
+        
+        <div class="card">
+            <h2>Create New Message</h2>
+            <textarea id="messageInput" placeholder="Type your message here..."></textarea>
+            <button class="btn" id="createBtn">
+                <span>💾 Save & Create QR</span>
+            </button>
+            
+            <div class="qr-result" id="qrResult">
+                <h3>✅ Message Saved!</h3>
+                <img id="qrImage" class="qr-image" alt="QR Code">
+                <p>Scan QR code to view message</p>
+                
+                <div class="url-box">
+                    <input type="text" id="messageUrl" readonly>
+                    <button class="btn btn-view" id="copyUrlBtn">
+                        <span>📋 Copy</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Your Messages</h2>
+            <button class="btn" id="refreshBtn" style="margin-bottom: 15px;">
+                <span>🔄 Refresh</span>
+            </button>
+            
+            <div class="messages-list" id="messagesList">
+                <div style="text-align: center; padding: 30px; color: #666;">
+                    <p>No messages yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hiển thị thông báo
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Tải danh sách tin nhắn
+        async function loadMessages() {
+            try {
+                const response = await fetch('/api/messages');
+                const data = await response.json();
+                renderMessages(data.messages || []);
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showNotification('Failed to load messages', 'error');
+            }
+        }
+        
+        // Hiển thị danh sách tin nhắn
+        function renderMessages(messages) {
+            const container = document.getElementById('messagesList');
+            
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #666;">
+                        <p>No messages yet. Create your first message!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            messages.forEach(msg => {
+                const shortMsg = msg.message.length > 100 
+                    ? msg.message.substring(0, 100) + '...' 
+                    : msg.message;
+                const time = new Date(msg.created_at).toLocaleString();
+                
+                html += `
+                <div class="message-item">
+                    <div class="message-content">${shortMsg}</div>
+                    <div class="message-meta">
+                        <div>📅 ${time}</div>
+                        <div class="message-actions">
+                            <a href="${msg.view_url}" target="_blank" class="btn btn-view">
+                                <span>👁 View</span>
+                            </a>
+                            <button class="btn btn-delete delete-btn" data-id="${msg.id}">
+                                <span>🗑 Delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Thêm sự kiện cho nút xóa
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const msgId = this.getAttribute('data-id');
+                    if (confirm('Delete this message?')) {
+                        await deleteMessage(msgId);
+                    }
+                });
+            });
+        }
+        
+        // Tạo tin nhắn mới
+        async function createMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                showNotification('Please enter a message', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳ Processing...</span>';
+            
+            try {
+                const response = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showQRResult(data);
+                    messageInput.value = '';
+                    showNotification('Message saved!');
+                    await loadMessages();
+                } else {
+                    showNotification(data.error || 'Error occurred', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating message:', error);
+                showNotification('Failed to save message', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>💾 Save & Create QR</span>';
+            }
+        }
+        
+        // Xóa tin nhắn
+        async function deleteMessage(msgId) {
+            try {
+                const response = await fetch(`/api/delete/${msgId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Message deleted');
+                    await loadMessages();
+                    // Ẩn QR result nếu đang hiển thị
+                    document.getElementById('qrResult').style.display = 'none';
+                } else {
+                    showNotification(data.error || 'Failed to delete', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                showNotification('Failed to delete message', 'error');
+            }
+        }
+        
+        // Hiển thị kết quả QR
+        function showQRResult(data) {
+            const qrResult = document.getElementById('qrResult');
+            const qrImage = document.getElementById('qrImage');
+            const messageUrl = document.getElementById('messageUrl');
+            
+            qrImage.src = data.qr_image;
+            messageUrl.value = data.view_url;
+            qrResult.style.display = 'block';
+            
+            // Cuộn đến kết quả
+            qrResult.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Sao chép URL
+        function copyUrl() {
+            const messageUrl = document.getElementById('messageUrl');
+            messageUrl.select();
+            document.execCommand('copy');
+            showNotification('Link copied!');
+        }
+        
+        // Khởi tạo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tải tin nhắn
+            loadMessages();
+            
+            // Sự kiện nút tạo tin nhắn
+            document.getElementById('createBtn').addEventListener('click', createMessage);
+            
+            // Sự kiện nút sao chép URL
+            document.getElementById('copyUrlBtn').addEventListener('click', copyUrl);
+            
+            // Sự kiện nút làm mới
+            document.getElementById('refreshBtn').addEventListener('click', loadMessages);
+            
+            // Enter để tạo tin nhắn
+            document.getElementById('messageInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    createMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

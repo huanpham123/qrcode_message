@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "qr.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "qr.py"
+    }
+  ]
+}
