@@ -1,5 +1,4 @@
-flask
-pymongo
-dnspython
+Flask
 qrcode
-pillow
+pymongo
+Flask-CORS
